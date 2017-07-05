@@ -60,6 +60,8 @@
 #include <pmcApi.h>
 #include <wlan_hdd_misc.h>
 
+extern int qca_request_firmware(const struct firmware **firmware_p, const char *name,struct device *device);
+
 static char *mac_param;
 module_param_named(mac, mac_param, charp, S_IRUGO);
 MODULE_PARM_DESC(mac, "mac address override");
@@ -4411,11 +4413,11 @@ VOS_STATUS hdd_parse_config_ini(hdd_context_t* pHddCtx)
 
    memset(cfgIniTable, 0, sizeof(cfgIniTable));
 
-   status = request_firmware(&fw, WLAN_INI_FILE, pHddCtx->parent_dev);
+   status = qca_request_firmware(&fw, WLAN_INI_FILE, pHddCtx->parent_dev);
 
    if(status)
    {
-      hddLog(VOS_TRACE_LEVEL_FATAL, "%s: request_firmware failed %d",__func__, status);
+      hddLog(VOS_TRACE_LEVEL_FATAL, "%s: qca_request_firmware failed %d",__func__, status);
       vos_status = VOS_STATUS_E_FAILURE;
       goto config_exit;
    }
@@ -5104,11 +5106,11 @@ VOS_STATUS hdd_update_mac_config(hdd_context_t *pHddCtx)
    }
 
    memset(macTable, 0, sizeof(macTable));
-   status = request_firmware(&fw, WLAN_MAC_FILE, pHddCtx->parent_dev);
+   status = qca_request_firmware(&fw, WLAN_MAC_FILE, pHddCtx->parent_dev);
 
    if (status)
    {
-      hddLog(VOS_TRACE_LEVEL_WARN, "%s: request_firmware failed %d",
+      hddLog(VOS_TRACE_LEVEL_WARN, "%s: qca_request_firmware failed %d",
              __func__, status);
       vos_status = VOS_STATUS_E_FAILURE;
       return vos_status;

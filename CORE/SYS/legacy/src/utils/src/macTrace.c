@@ -53,6 +53,8 @@
 #include "vos_memory.h"
 #include "vos_trace.h"
 
+#ifdef TRACE_RECORD
+
 /* ---------------------------------------------------------------------------
     \fn macTraceGetHDDWlanConnState
     \function to get string equivalent of a value
@@ -976,3 +978,4 @@ tANI_U8* macTraceMsgString(tpAniSirGlobal pMac, tANI_U32 msgType)
                 return ((tANI_U8*)"Unknown MsgType");
     }
 }
+#endif

@@ -239,6 +239,163 @@ static VOS_STATUS hdd_parse_ese_beacon_req(tANI_U8 *pValue,
 /*
  * Android DRIVER command structures
  */
+//tkun add
+ typedef char            A_CHAR;
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,20)
+ #define GET_INODE_FROM_FILEP(filp) \
+     (filp)->f_path.dentry->d_inode
+ #else
+ #define GET_INODE_FROM_FILEP(filp) \
+     (filp)->f_dentry->d_inode
+ #endif
+// #define A_MALLOC(size)                  kmalloc((size), GFP_KERNEL)
+ #define A_MALLOC_NOWAIT(size)           kmalloc((size), GFP_ATOMIC)
+// #define A_FREE(addr)                    kfree(addr);addr=NULL;
+//#define A_MEMCPY(dst, src, len)         memcpy((dst), (src), (len))
+// #define A_MEMZERO(addr, len)            memset((addr), 0, (len))
+ #define A_MEMCMP(addr1, addr2, len)     memcmp((addr1), (addr2), (len))
+ #define A_ROUND_UP(x, y)  ((((x) + ((y) - 1)) / (y)) * (y))
+ 
+ char qcafwpath[256] = "/lib/firmware";
+ 
+ int android_readwrite_file(const A_CHAR *filename, A_CHAR *rbuf, const A_CHAR *wbuf, size_t length)
+ {
+     int ret = 0;
+     struct file *filp = (struct file *)-ENOENT;
+     mm_segment_t oldfs;
+     oldfs = get_fs();
+     set_fs(KERNEL_DS);
+ 
+ //    printk("%s: filename %s \n",__func__,filename);
+     do {
+         int mode = (wbuf) ? O_RDWR : O_RDONLY;
+         filp = filp_open(filename, mode, S_IRUSR);
+         if (IS_ERR(filp) || !filp->f_op) {
+             printk("%s: file %s filp_open error\n", __FUNCTION__, filename);
+             ret = -ENOENT;
+             break;
+         }
+ 
+         if (length==0) {
+             /* Read the length of the file only */
+             struct inode    *inode;
+ 
+             inode = GET_INODE_FROM_FILEP(filp);
+             if (!inode) {
+  //               printk("%s: Get inode from %s failed\n", __FUNCTION__, filen    ame);
+                 ret = -ENOENT;
+                 break;
+             }
+             ret = i_size_read(inode->i_mapping->host);
+             break;
+         }
+ 
+         if (wbuf) {
+            if ( (ret=filp->f_op->write(filp, wbuf, length, &filp->f_pos)) < 0) {
+//                 printk("%s: Write %u bytes to file %s error %d\n", __FUNCTION__,
+ //                                length, filename, ret);
+                 break;
+             }
+         } else {
+             if ( (ret=filp->f_op->read(filp, rbuf, length, &filp->f_pos)) < 0) {
+//                 printk ("%s: Read %u bytes from file %s error %d\n", __FUNCTION__,
+ //                                length, filename, ret);
+                 break;
+             }
+         }
+     } while (0);
+ 
+     if (!IS_ERR(filp)) {
+         filp_close(filp, NULL);
+     }
+     set_fs(oldfs);
+ 
+     return ret;
+ }
+ 
+ 
+ int android_request_firmware(const struct firmware **firmware_p, const char *name,struct device *device)
+ {
+     int ret = 0;
+     struct firmware *firmware;
+     char filename[256];
+     const char *raw_filename = name;
+     *firmware_p = firmware = A_MALLOC(sizeof(*firmware));
+     if (!firmware)
+         return -ENOMEM;
+     A_MEMZERO(firmware, sizeof(*firmware));
+     do {
+         size_t length, bufsize, bmisize;
+ 
+         if (snprintf(filename, sizeof(filename), "%s/%s", qcafwpath,
+                                 raw_filename) >= sizeof(filename)) {
+             printk("snprintf: %s/%s\n", qcafwpath, raw_filename);
+             ret = -1;
+             break;
+         }
+         if ( (ret=android_readwrite_file(filename, NULL, NULL, 0)) < 0) {
+             break;
+         } else {
+             length = ret;
+         }
+ 
+         if (strcmp(raw_filename, "softmac") == 0) {
+             bufsize = length = 17;
+         } else {
+             bufsize = ALIGN(length, PAGE_SIZE);
+             bmisize = A_ROUND_UP(length, 4);
+             bufsize = max(bmisize, bufsize);
+         }
+         firmware->data = vmalloc(bufsize);
+         firmware->size = length;
+ 
+   //    printk("AR6K: %s(): raw_filename=%s, bufsize=%d\n", __FUNCTION__, ra    w_filename, bufsize);
+ 
+         if (!firmware->data) {
+             printk("%s: Cannot allocate buffer for firmware\n", __FUNCTION__);
+             ret = -ENOMEM;
+             break;
+         }
+ 
+         if ( (ret=android_readwrite_file(filename, (char*)firmware->data, NULL, length)) != length) {
+//             printk("%s: file read error, ret %d request %d\n", __FUNCTION__,ret,length);
+//             ret = -1;
+             break;
+         }
+ 
+     } while (0);
+ 
+     if (ret<0) {
+         if (firmware) {
+         if (firmware->data)
+                 vfree(firmware->data);
+             A_FREE(firmware);
+         }
+         *firmware_p = NULL;
+     } else {
+         ret = 0;
+     }
+     return ret;
+ }
+ 
+ void android_release_firmware(const struct firmware *firmware)
+ {
+     if (firmware) {
+         if (firmware->data)
+             vfree(firmware->data);
+         kfree(firmware);
+     }
+ }
+extern int qca_request_firmware(const struct firmware **firmware_p,const char *name,struct device *device)
+ {
+   //      int uevent = 1;
+ 
+         //return _request_firmware(firmware_p, name, device, uevent, false);
+ 
+         return android_request_firmware(firmware_p, name,device);
+ 
+ 
+ }
 struct android_wifi_reassoc_params {
    unsigned char bssid[18];
    int channel;
@@ -7778,7 +7935,7 @@ VOS_STATUS hdd_get_cfg_file_size(v_VOID_t *pCtx, char *pFileName, v_SIZE_t *pBuf
 
    ENTER();
 
-   status = request_firmware(&pHddCtx->fw, pFileName, pHddCtx->parent_dev);
+   status = qca_request_firmware(&pHddCtx->fw, pFileName, pHddCtx->parent_dev);
 
    if(status || !pHddCtx->fw || !pHddCtx->fw->data) {
       hddLog(VOS_TRACE_LEVEL_FATAL,"%s: CFG download failed",__func__);
@@ -7819,7 +7976,7 @@ VOS_STATUS hdd_read_cfg_file(v_VOID_t *pCtx, char *pFileName,
 
    ENTER();
 
-   status = request_firmware(&pHddCtx->fw, pFileName, pHddCtx->parent_dev);
+   status = qca_request_firmware(&pHddCtx->fw, pFileName, pHddCtx->parent_dev);
 
    if(status || !pHddCtx->fw || !pHddCtx->fw->data) {
       hddLog(VOS_TRACE_LEVEL_FATAL,"%s: CFG download failed",__func__);
@@ -12862,15 +13019,34 @@ static int hdd_driver_init( void)
   \return - 0 for success, non zero for failure
 
   --------------------------------------------------------------------------*/
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+extern  int wifi_setup_dt(void);
+extern  void wifi_teardown_dt(void);
+#endif
+extern  void extern_wifi_set_enable(int is_on);
+extern  void sdio_reinit(void);
+
 #ifdef MODULE
 static int __init hdd_module_init ( void)
 {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+    wifi_setup_dt();
+#endif
+        extern_wifi_set_enable(0);
+        mdelay(200);
+        extern_wifi_set_enable(1);
+        mdelay(200);
+sdio_reinit();
+
    return hdd_driver_init();
 }
 #else /* #ifdef MODULE */
 static int __init hdd_module_init ( void)
 {
    /* Driver initialization is delayed to fwpath_changed_handler */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+wifi_teardown_dt();
+#endif
    return 0;
 }
 #endif /* #ifdef MODULE */

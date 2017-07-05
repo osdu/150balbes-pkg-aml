@@ -118,7 +118,7 @@ static int ol_get_fw_files_for_target(struct ol_fw_files *pfw_files,
     return 0;
 }
 #endif
-
+extern int qca_request_firmware(const struct firmware **firmware_p, const char *name,struct device *device);
 #ifdef HIF_USB
 static A_STATUS ol_usb_extra_initialization(struct ol_softc *scn);
 #endif
@@ -164,7 +164,7 @@ static int ol_transfer_single_bin_file(struct ol_softc *scn,
 				__func__));
 	}
 
-	if (request_firmware(&fw_entry, filename, scn->sc_osdev->device) != 0)
+	if (qca_request_firmware(&fw_entry, filename, scn->sc_osdev->device) != 0)
 	{
 		AR_DEBUG_PRINTF(ATH_DEBUG_ERR,
 				("%s: Failed to get %s\n",
@@ -492,7 +492,7 @@ static int ol_transfer_bin_file(struct ol_softc *scn, ATH_BIN_FILE file,
 		break;
 	}
 
-	if (request_firmware(&fw_entry, filename, scn->sc_osdev->device) != 0)
+	if (qca_request_firmware(&fw_entry, filename, scn->sc_osdev->device) != 0)
 	{
 		printk("%s: Failed to get %s\n", __func__, filename);
 
@@ -506,7 +506,7 @@ static int ol_transfer_bin_file(struct ol_softc *scn, ATH_BIN_FILE file,
 			filename = scn->fw_files.board_data;
 			printk("%s: Trying to load default %s\n",
 				__func__, filename);
-			if (request_firmware(&fw_entry, filename,
+			if (qca_request_firmware(&fw_entry, filename,
 				scn->sc_osdev->device) != 0) {
 				printk("%s: Failed to get %s\n",
 					__func__, filename);
