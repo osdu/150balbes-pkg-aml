@@ -1,2 +1,2 @@
 # pkg-aml
-Pkg aml
+Pkg firmware-aml
