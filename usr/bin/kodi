@@ -23,8 +23,8 @@ bin_name=kodi
 SAVED_ARGS="$@"
 prefix="/usr"
 exec_prefix="/usr"
-datarootdir="${prefix}/share"
-LIBDIR="${exec_prefix}/lib"
+datarootdir="/usr/share"
+LIBDIR="/usr/lib"
 CRASHLOG_DIR=${CRASHLOG_DIR:-$HOME}
 USERDATA_DIR="${HOME}/.${bin_name}"
 
