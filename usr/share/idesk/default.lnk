@@ -1,0 +1,9 @@
+table Icon
+  Caption: Idesk
+  Command: /usr/bin/Xdialog --msgbox "IDESK \n Icon Desktop Manager \n by FixXxeR \n\n 2005" 15 40
+  Icon: /usr/local/share/idesk/folder_home.xpm
+  Width: 48
+  Height: 48
+  X: 30
+  Y: 30
+end

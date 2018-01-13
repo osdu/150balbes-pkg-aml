@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=Idesk Icon Manager
+Categories=System;Utility;Core;
+Exec=idesk
+Icon=idesk
+StartupNotify=false
+Type=Application
+Terminal=false
+GenericName=Idesk Icon Manager
+Comment=Desktop Icon Manager for minimalistic WMs
