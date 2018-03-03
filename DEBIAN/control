@@ -1,0 +1,10 @@
+Package: aml-amremote-905
+Version: 0.01
+Architecture: arm64
+Maintainer: Oleg Ivanov <balbes-150@yandex.ru>
+Installed-Size: 1
+Provides: aml-amremote-905
+Conflicts: aml-amremote-905
+Section: kernel
+Priority: optional
+Description: IR amremote S905
