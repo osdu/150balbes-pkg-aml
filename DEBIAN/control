@@ -1,0 +1,11 @@
+Package: aml-codec
+Version: 0.01
+Architecture: arm64
+Maintainer: Oleg Ivanov <balbes-150@yandex.ru>
+Installed-Size: 1
+Provides: aml-codec
+Conflicts: aml-codec-905
+Depends:
+Section: video
+Priority: optional
+Description: aml-codec
