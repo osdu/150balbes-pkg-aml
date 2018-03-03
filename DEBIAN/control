@@ -1,0 +1,10 @@
+Package: aml-mali6
+Version: 0.01
+Architecture: arm64
+Maintainer: Oleg Ivanov <balbes-150@yandex.ru>
+Installed-Size: 1
+Provides: aml-mali6
+Conflicts: aml-mali6
+Section: kernel
+Priority: optional
+Description: lib mali6
