@@ -1,0 +1,11 @@
+Package: aml-kodi
+Version: 17.6
+Architecture: arm64
+Maintainer: Oleg Ivanov <balbes-150@yandex.ru>
+Installed-Size: 1
+Provides: aml-kodi
+Conflicts: aml-kodi-905
+Depends: aml-amremote-905, aml-mali6, aml-codec
+Section: video
+Priority: optional
+Description: aml-kodi
