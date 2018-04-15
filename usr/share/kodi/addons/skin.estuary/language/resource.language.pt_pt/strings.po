@@ -192,10 +192,6 @@ msgctxt "#31050"
 msgid "Press [B]OK[/B] to stop"
 msgstr "Carregue em [B]OK[/B] para parar"
 
-msgctxt "#31051"
-msgid "Toggle language"
-msgstr "Alternar idioma"
-
 msgctxt "#31052"
 msgid "filtered"
 msgstr "filtrados"
@@ -431,10 +427,6 @@ msgstr "Definições globais que se aplicam a todas as áreas do visual."
 msgctxt "#31130"
 msgid "Main menu-related settings: Configure the home screen to your likings."
 msgstr "Definições do menu principal: Configure o ecrã inicial ao seu gosto."
-
-msgctxt "#31132"
-msgid "min"
-msgstr "min"
 
 msgctxt "#31134"
 msgid "Remaining"
