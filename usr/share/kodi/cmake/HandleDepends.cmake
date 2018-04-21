@@ -1,4 +1,4 @@
-include(${CORE_SOURCE_DIR}/project/cmake/scripts/common/CheckTargetPlatform.cmake)
+include(${CORE_SOURCE_DIR}/cmake/scripts/common/CheckTargetPlatform.cmake)
 
 # handle addon depends
 function(add_addon_depends addon searchpath)
@@ -7,6 +7,10 @@ function(add_addon_depends addon searchpath)
   set(OUTPUT_DIR ${ADDON_DEPENDS_PATH})
   # look for platform-specific dependencies
   file(GLOB_RECURSE cmake_input_files ${searchpath}/${CORE_SYSTEM_NAME}/*.txt)
+  # backward compatibility
+  if(NOT cmake_input_files AND CORE_SYSTEM_NAME STREQUAL windowsstore)
+    file(GLOB_RECURSE cmake_input_files ${searchpath}/windows/*.txt)
+  endif()
   file(GLOB_RECURSE cmake_input_files2 ${searchpath}/common/*.txt)
   list(APPEND cmake_input_files ${cmake_input_files2})
 
@@ -17,6 +21,7 @@ function(add_addon_depends addon searchpath)
             file MATCHES noinstall.txt OR
             file MATCHES flags.txt OR
             file MATCHES deps.txt OR
+            file MATCHES "[a-z]+-deps[.]txt" OR
             file MATCHES platforms.txt))
       message(STATUS "Processing ${file}")
       file(STRINGS ${file} def)
@@ -50,6 +55,7 @@ function(add_addon_depends addon searchpath)
           set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${dir}/flags.txt)
           file(STRINGS ${dir}/flags.txt extraflags)
           string(REPLACE " " ";" extraflags ${extraflags})
+
           message(STATUS "${id} extraflags: ${extraflags}")
         endif()
 
@@ -62,6 +68,11 @@ function(add_addon_depends addon searchpath)
                        -DCORE_SYSTEM_NAME=${CORE_SYSTEM_NAME}
                        -DENABLE_STATIC=1
                        -DBUILD_SHARED_LIBS=0)
+        # windows store args
+        if (CMAKE_SYSTEM_NAME STREQUAL WindowsStore)
+          list(APPEND BUILD_ARGS -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+                                 -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION})
+        endif()
         # if there are no make rules override files available take care of manually passing on ARCH_DEFINES
         if(NOT CMAKE_USER_MAKE_RULES_OVERRIDE AND NOT CMAKE_USER_MAKE_RULES_OVERRIDE_CXX)
           # make sure we create strings, not lists
@@ -103,11 +114,18 @@ function(add_addon_depends addon searchpath)
               endif()
             endif()
 
-            # on windows "patch.exe" can only handle CR-LF line-endings so we
-            # need to force it to also handle LF-only line endings
             set(PATCH_PROGRAM ${PATCH_EXECUTABLE})
+
+            # On Windows "patch.exe" can only handle CR-LF line-endings.
+            # Our patches have LF-only line endings - except when they
+            # have been checked out as part of a dependency hosted on Git
+            # and core.autocrlf=true.
             if(WIN32)
-              set(PATCH_PROGRAM "\"${PATCH_PROGRAM}\" --binary")
+              file(READ ${patch} patch_content_hex HEX)
+              # Force handle LF-only line endings
+              if(NOT patch_content_hex MATCHES "0d0a")
+                set(PATCH_PROGRAM "\"${PATCH_PROGRAM}\" --binary")
+              endif()
             endif()
           endif()
 
@@ -131,8 +149,15 @@ function(add_addon_depends addon searchpath)
           set(INSTALL_COMMAND INSTALL_COMMAND "")
         endif()
 
-        # check if there's a deps.txt containing dependencies on other libraries
-        if(EXISTS ${dir}/deps.txt)
+        # check if there's a platform-specific or generic deps.txt containing dependencies on other libraries
+        if(EXISTS ${dir}/${CORE_SYSTEM_NAME}-deps.txt)
+          file(STRINGS ${dir}/${CORE_SYSTEM_NAME}-deps.txt deps)
+          message(STATUS "${id} depends: ${deps}")
+        # backward compatibility
+        elseif(CORE_SYSTEM_NAME STREQUAL windowsstore AND EXISTS ${dir}/windows-deps.txt)
+          file(STRINGS ${dir}/windows-deps.txt deps)
+          message(STATUS "${id} depends: ${deps}")
+        elseif(EXISTS ${dir}/deps.txt)
           set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${dir}/deps.txt)
           file(STRINGS ${dir}/deps.txt deps)
           message(STATUS "${id} depends: ${deps}")
@@ -161,6 +186,10 @@ function(add_addon_depends addon searchpath)
                                   PATCH_COMMAND ${PATCH_COMMAND}
                                   "${INSTALL_COMMAND}")
 
+        if(CMAKE_VERSION VERSION_GREATER 3.5.9)
+          list(APPEND EXTERNALPROJECT_SETUP GIT_SHALLOW 1)
+        endif()
+
         # if there's an url defined we need to pass that to externalproject_add()
         if(DEFINED url AND NOT "${url}" STREQUAL "")
           # check if there's a third parameter in the file
@@ -172,6 +201,20 @@ function(add_addon_depends addon searchpath)
                                 GIT_REPOSITORY ${url}
                                 GIT_TAG ${revision}
                                 "${EXTERNALPROJECT_SETUP}")
+
+            # For patchfiles to work, disable (users globally set) autocrlf=true
+            if(CMAKE_MINIMUM_REQUIRED_VERSION VERSION_GREATER 3.7)
+              message(AUTHOR_WARNING "Make use of GIT_CONFIG")
+            endif()
+            if(WIN32 AND patches)
+              externalproject_add_step(${id} gitconfig
+                                       COMMAND git config core.autocrlf false
+                                       COMMAND git rm -rf --cached .
+                                       COMMAND git reset --hard HEAD
+                                       COMMENT "Performing gitconfig step: Disabling autocrlf to enable patching for '${id}'"
+                                       DEPENDERS patch
+                                       WORKING_DIRECTORY <SOURCE_DIR>)
+            endif()
           else()
             set(CONFIGURE_COMMAND "")
             if(NOT WIN32)

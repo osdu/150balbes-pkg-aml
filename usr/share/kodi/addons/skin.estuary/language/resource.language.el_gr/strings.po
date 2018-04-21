@@ -192,10 +192,6 @@ msgctxt "#31050"
 msgid "Press [B]OK[/B] to stop"
 msgstr "Πατήστε το [B]OK[/B] για να διακοπή"
 
-msgctxt "#31051"
-msgid "Toggle language"
-msgstr "Εναλλαγή γλώσσας"
-
 msgctxt "#31052"
 msgid "filtered"
 msgstr "φιλτραρισμένο"
@@ -435,10 +431,6 @@ msgstr "Ρυθμίσεις βασικού μενού: Ρυθμίστε την α
 msgctxt "#31131"
 msgid "Choose skin fanart pack"
 msgstr "Επιλογή πακέτου fanart "
-
-msgctxt "#31132"
-msgid "min"
-msgstr "λεπτά"
 
 msgctxt "#31134"
 msgid "Remaining"

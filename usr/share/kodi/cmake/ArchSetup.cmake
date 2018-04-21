@@ -11,6 +11,9 @@
 # DEP_DEFINES - compiler definitions for system dependencies (e.g. LIRC)
 # + the results of compiler tests etc.
 
+# workaround a bug in older cmake, where binutils wouldn't be set after deleting CMakeCache.txt
+include(CMakeFindBinUtils)
+
 include(CheckCXXSourceCompiles)
 include(CheckSymbolExists)
 include(CheckFunctionExists)
@@ -54,9 +57,6 @@ endmacro()
 
 # -------- Main script --------- 
 message(STATUS "System type: ${CMAKE_SYSTEM_NAME}")
-if(NOT CORE_SYSTEM_NAME)
-  string(TOLOWER ${CMAKE_SYSTEM_NAME} CORE_SYSTEM_NAME)
-endif()
 
 if(WITH_CPU)
   set(CPU ${WITH_CPU})
@@ -82,17 +82,17 @@ else()
 endif()
 
 # Main cpp
-set(CORE_MAIN_SOURCE ${CORE_SOURCE_DIR}/xbmc/platform/posix/main.cpp)
+set(CORE_MAIN_SOURCE ${CMAKE_SOURCE_DIR}/xbmc/platform/posix/main.cpp)
 
 # system specific arch setup
-if(NOT EXISTS ${PROJECT_SOURCE_DIR}/scripts/${CORE_SYSTEM_NAME}/ArchSetup.cmake)
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake/scripts/${CORE_SYSTEM_NAME}/ArchSetup.cmake)
   message(FATAL_ERROR "Couldn't find configuration for '${CORE_SYSTEM_NAME}' "
                       "Either the platform is not (yet) supported "
                       "or a toolchain file has to be specified. "
-                      "Consult ${CMAKE_SOURCE_DIR}/README.md for instructions. "
+                      "Consult ${CMAKE_SOURCE_DIR}/cmake/README.md for instructions. "
                       "Note: Specifying a toolchain requires a clean build directory!")
 endif()
-include(${PROJECT_SOURCE_DIR}/scripts/${CORE_SYSTEM_NAME}/ArchSetup.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/scripts/${CORE_SYSTEM_NAME}/ArchSetup.cmake)
 
 message(STATUS "Core system type: ${CORE_SYSTEM_NAME}")
 message(STATUS "Platform: ${PLATFORM}")
@@ -146,16 +146,15 @@ if(NOT DEFINED NEON OR NEON)
   option(ENABLE_NEON "Enable NEON optimization" ${NEON})
   if(ENABLE_NEON)
     message(STATUS "NEON optimization enabled")
-    add_options(ALL_LANGUAGES ALL_BUILDS ${NEON_FLAGS})
+    add_definitions(-DHAS_NEON)
+    if(NEON_FLAGS)
+      add_options(ALL_LANGUAGES ALL_BUILDS ${NEON_FLAGS})
+    endif()
   endif()
 endif()
 
-if(NOT DEFINED MFC OR MFC)
-  option(ENABLE_MFC "Enable MFC Exynos4/5 codec" ${MFC})
-  if(ENABLE_MFC)
-    message(STATUS "MFC Exynos4/5 codec enabled")
-    list(APPEND SYSTEM_DEFINES -DHAS_MFC=1)
-  endif()
+if(PLATFORM_DEFINES)
+  add_options(ALL_LANGUAGES ALL_BUILDS ${PLATFORM_DEFINES})
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

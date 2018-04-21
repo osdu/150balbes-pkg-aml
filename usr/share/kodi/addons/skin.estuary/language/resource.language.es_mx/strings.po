@@ -192,10 +192,6 @@ msgctxt "#31050"
 msgid "Press [B]OK[/B] to stop"
 msgstr "Presione [B]OK[/B] para parar"
 
-msgctxt "#31051"
-msgid "Toggle language"
-msgstr "Alternar idioma"
-
 msgctxt "#31052"
 msgid "filtered"
 msgstr "filtrado"
@@ -439,10 +435,6 @@ msgstr "Ajustes relacionados con el menú principal: Configure la pantalla de in
 msgctxt "#31131"
 msgid "Choose skin fanart pack"
 msgstr "Elegir paquete de skin fanart"
-
-msgctxt "#31132"
-msgid "min"
-msgstr "mínimo"
 
 msgctxt "#31134"
 msgid "Remaining"
