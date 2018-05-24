@@ -1,2 +1,2 @@
 # pkg-aml
-Pkg aml
+Pkg amlogig for Ubuntu Bionic
